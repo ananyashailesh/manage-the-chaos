@@ -85,7 +85,7 @@ export default function KanbanBoard() {
           title: 'Design user interface mockups',
           description: 'Create wireframes and high-fidelity designs for the new dashboard',
           priority: 'high',
-          assignee: { id: '1', name: 'Alice Johnson' },
+          assignee: { id: '1', name: 'Ananya' },
           labels: ['Design', 'UI/UX']
         },
         {
@@ -93,7 +93,7 @@ export default function KanbanBoard() {
           title: 'Set up development environment',
           description: 'Configure local development setup with all necessary tools',
           priority: 'medium',
-          assignee: { id: '2', name: 'Bob Smith' },
+          assignee: { id: '2', name: 'Annie' },
           labels: ['Development', 'Setup']
         }
       ]
@@ -108,7 +108,7 @@ export default function KanbanBoard() {
           title: 'Implement authentication system',
           description: 'Add login, logout, and user session management',
           priority: 'high',
-          assignee: { id: '3', name: 'Carol Davis' },
+          assignee: { id: '3', name: 'Devika' },
           labels: ['Backend', 'Security']
         }
       ]
@@ -123,7 +123,7 @@ export default function KanbanBoard() {
           title: 'Code review for API endpoints',
           description: 'Review and test new REST API implementations',
           priority: 'medium',
-          assignee: { id: '4', name: 'David Wilson' },
+          assignee: { id: '4', name: 'Raichel' },
           labels: ['Review', 'API']
         }
       ]
@@ -138,7 +138,7 @@ export default function KanbanBoard() {
           title: 'Project setup and initial configuration',
           description: 'Initialize project structure and basic configurations',
           priority: 'low',
-          assignee: { id: '1', name: 'Alice Johnson' },
+          assignee: { id: '1', name: 'Ananaya' },
           labels: ['Setup', 'Configuration']
         }
       ]
