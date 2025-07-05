@@ -60,8 +60,8 @@ export default function Sidebar() {
             collapsed && "px-0"
           )}
         >
-          <Plus className="w-4 h-4" />
-          {!collapsed && <span className="ml-2">New Project</span>}
+          <Plus className={cn("w-4 h-4", !collapsed && "mr-2")} />
+          {!collapsed && <span>New Project</span>}
         </Button>
       </div>
 
