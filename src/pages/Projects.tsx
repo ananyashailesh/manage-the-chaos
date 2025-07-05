@@ -1,90 +1,62 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import ProjectCard from '@/components/ProjectCard';
+import NewProjectDialog from '@/components/NewProjectDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Search, Filter, Grid, List } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 const Projects = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  
-  const allProjects = [
-    {
-      id: '1',
-      name: 'Mobile App Redesign',
-      description: 'Complete redesign of the mobile application interface with modern UI/UX principles',
-      progress: 75,
-      status: 'active' as const,
-      dueDate: 'Dec 15, 2024',
-      teamMembers: [
-        { id: '1', name: 'Alice Johnson' },
-        { id: '2', name: 'Bob Smith' },
-        { id: '3', name: 'Carol Davis' }
-      ],
-      tasksCompleted: 12,
-      totalTasks: 16
-    },
-    {
-      id: '2',
-      name: 'Backend API Development',
-      description: 'RESTful API development for the new platform with comprehensive documentation',
-      progress: 45,
-      status: 'active' as const,
-      dueDate: 'Jan 20, 2025',
-      teamMembers: [
-        { id: '4', name: 'David Wilson' },
-        { id: '5', name: 'Eve Brown' }
-      ],
-      tasksCompleted: 8,
-      totalTasks: 18
-    },
-    {
-      id: '3',
-      name: 'Marketing Website',
-      description: 'Corporate website with modern design and SEO optimization',
-      progress: 90,
-      status: 'completed' as const,
-      dueDate: 'Nov 30, 2024',
-      teamMembers: [
-        { id: '6', name: 'Frank Miller' },
-        { id: '7', name: 'Grace Lee' }
-      ],
-      tasksCompleted: 9,
-      totalTasks: 10
-    },
-    {
-      id: '4',
-      name: 'E-commerce Platform',
-      description: 'Full-stack e-commerce solution with payment integration',
-      progress: 25,
-      status: 'active' as const,
-      dueDate: 'Mar 15, 2025',
-      teamMembers: [
-        { id: '8', name: 'Helen Clark' },
-        { id: '9', name: 'Ian Cooper' },
-        { id: '10', name: 'Jane Foster' }
-      ],
-      tasksCompleted: 5,
-      totalTasks: 20
-    },
-    {
-      id: '5',
-      name: 'Data Analytics Dashboard',
-      description: 'Business intelligence dashboard with real-time analytics',
-      progress: 10,
-      status: 'on-hold' as const,
-      dueDate: 'Apr 30, 2025',
-      teamMembers: [
-        { id: '11', name: 'Kevin Lopez' },
-        { id: '12', name: 'Lisa Wang' }
-      ],
-      tasksCompleted: 2,
-      totalTasks: 15
+  const [projects, setProjects] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  const fetchProjects = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          project_members!inner(user_id, role),
+          tasks(id, status)
+        `)
+        .eq('project_members.user_id', user.id);
+
+      if (error) throw error;
+
+      const projectsWithStats = data?.map(project => ({
+        ...project,
+        tasksCompleted: project.tasks?.filter((t: any) => t.status === 'done').length || 0,
+        totalTasks: project.tasks?.length || 0,
+        teamMembers: [{ id: user.id, name: user.email?.split('@')[0] || 'You' }],
+        dueDate: project.due_date ? new Date(project.due_date).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        }) : 'No due date'
+      })) || [];
+
+      setProjects(projectsWithStats);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, [user]);
+
+  const allProjects = projects;
 
   const activeProjects = allProjects.filter(p => p.status === 'active');
   const completedProjects = allProjects.filter(p => p.status === 'completed');
@@ -126,10 +98,7 @@ const Projects = () => {
                 <List className="w-4 h-4" />
               </Button>
             </div>
-            <Button className="bg-gradient-to-r from-primary to-accent text-white">
-              <Plus className="w-4 h-4 mr-2" />
-              New Project
-            </Button>
+            <NewProjectDialog onProjectCreated={fetchProjects} />
           </div>
         </div>
 
@@ -167,78 +136,90 @@ const Projects = () => {
         </div>
 
         {/* Projects Content */}
-        <Tabs defaultValue="all" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="all">
-              All Projects
-              <Badge variant="secondary" className="ml-2">
-                {allProjects.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="active">
-              Active
-              <Badge variant="secondary" className="ml-2">
-                {activeProjects.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="completed">
-              Completed
-              <Badge variant="secondary" className="ml-2">
-                {completedProjects.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="on-hold">
-              On Hold
-              <Badge variant="secondary" className="ml-2">
-                {onHoldProjects.length}
-              </Badge>
-            </TabsTrigger>
-          </TabsList>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-lg">Loading projects...</div>
+          </div>
+        ) : (
+          <Tabs defaultValue="all" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="all">
+                All Projects
+                <Badge variant="secondary" className="ml-2">
+                  {allProjects.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="active">
+                Active
+                <Badge variant="secondary" className="ml-2">
+                  {activeProjects.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="completed">
+                Completed
+                <Badge variant="secondary" className="ml-2">
+                  {completedProjects.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="on-hold">
+                On Hold
+                <Badge variant="secondary" className="ml-2">
+                  {onHoldProjects.length}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="all">
-            <div className={viewMode === 'grid' 
-              ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
-              : "space-y-4"
-            }>
-              {allProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </div>
-          </TabsContent>
+            <TabsContent value="all">
+              {allProjects.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No projects yet. Create your first project to get started!</p>
+                </div>
+              ) : (
+                <div className={viewMode === 'grid' 
+                  ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
+                  : "space-y-4"
+                }>
+                  {allProjects.map((project) => (
+                    <ProjectCard key={project.id} project={project} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
 
-          <TabsContent value="active">
-            <div className={viewMode === 'grid' 
-              ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
-              : "space-y-4"
-            }>
-              {activeProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </div>
-          </TabsContent>
+            <TabsContent value="active">
+              <div className={viewMode === 'grid' 
+                ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
+                : "space-y-4"
+              }>
+                {activeProjects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
+            </TabsContent>
 
-          <TabsContent value="completed">
-            <div className={viewMode === 'grid' 
-              ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
-              : "space-y-4"
-            }>
-              {completedProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </div>
-          </TabsContent>
+            <TabsContent value="completed">
+              <div className={viewMode === 'grid' 
+                ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
+                : "space-y-4"
+              }>
+                {completedProjects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
+            </TabsContent>
 
-          <TabsContent value="on-hold">
-            <div className={viewMode === 'grid' 
-              ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
-              : "space-y-4"
-            }>
-              {onHoldProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="on-hold">
+              <div className={viewMode === 'grid' 
+                ? "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6" 
+                : "space-y-4"
+              }>
+                {onHoldProjects.map((project) => (
+                  <ProjectCard key={project.id} project={project} />
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        )}
       </div>
     </DashboardLayout>
   );

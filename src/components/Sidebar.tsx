@@ -6,12 +6,12 @@ import {
   Users, 
   Calendar, 
   Settings, 
-  Plus,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import NewProjectDialog from './NewProjectDialog';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -54,15 +54,7 @@ export default function Sidebar() {
 
       {/* New Project Button */}
       <div className="p-4">
-        <Button 
-          className={cn(
-            "w-full bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent text-white shadow-md",
-            collapsed && "px-0"
-          )}
-        >
-          <Plus className={cn("w-4 h-4", !collapsed && "mr-2")} />
-          {!collapsed && <span>New Project</span>}
-        </Button>
+        <NewProjectDialog collapsed={collapsed} />
       </div>
 
       {/* Navigation */}
